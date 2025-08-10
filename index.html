@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Histórico Escolar Digital</title>
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        overflow-x: hidden;
+        font-family: Arial, sans-serif;
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .logo-container {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        background-color: #ffffff;
+        padding: 10px 20px;
+        border-radius: 8px 8px 0 0;
+        width: 100%;
+        box-sizing: border-box;
+        border-bottom: 2px solid #ccc;
+    }
+
+    .logo img {
+        height: 80px;
+        user-select: none;
+    }
+
+    .conteudo {
+        background-color: #e0e0e0;
+        padding: 20px 0;
+        border-radius: 0;
+        width: 100vw;
+        box-sizing: border-box;
+        max-width: none;
+        border-left: 2px solid #ccc;
+        border-right: 2px solid #ccc;
+        border-bottom: 1px solid #ccc;
+    }
+
+    .toolbar {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+        width: 100%;
+        box-sizing: border-box;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .toolbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    button.zoom-button,
+    button.page-button,
+    button.pdf-btn,
+    button.xml-btn {
+        padding: 6px 16px;
+        height: 36px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        font-weight: bold;
+        user-select: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        border: none;
+        white-space: nowrap;
+        gap: 8px;
+    }
+    button.zoom-button {
+        background-color: #6c757d;
+        color: white;
+    }
+    button.page-button {
+        background-color: #007bff;
+        color: white;
+        border: 2px solid #007bff;
+        cursor: default;
+    }
+    button.pdf-btn, button.xml-btn {
+        background-color: #6c757d;
+        color: white;
+    }
+    button.pdf-btn:hover, button.xml-btn:hover {
+        background-color: #5a6268;
+    }
+
+    .documento {
+        border-top: 1px solid #ccc;
+        height: auto;
+        width: 100%;
+        background-color: #f9f9f9;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        overflow: auto;
+        box-sizing: border-box;
+    }
+    .documento img {
+        width: 100vw;
+        height: auto;
+        transition: transform 0.3s ease;
+        transform-origin: top center;
+        object-fit: contain;
+        user-select: none;
+    }
+
+    @media (max-width: 600px) {
+        .logo-container {
+            width: 100% !important;
+            padding: 10px 10px;
+        }
+        .logo img {
+            height: 60px;
+        }
+        .conteudo {
+            width: 100vw !important;
+            padding: 15px 0;
+        }
+        button.zoom-button,
+        button.page-button,
+        button.pdf-btn,
+        button.xml-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            height: 32px;
+            gap: 6px;
+        }
+        .documento img {
+            width: 100vw;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div class="logo-container" role="banner" aria-label="Logo UNIPÊ">
+    <div class="logo">
+        <img src="Captura de tela 2025-08-08 112944.png" alt="Logo UNIPÊ" />
+    </div>
+</div>
+
+<div class="conteudo">
+    <div class="toolbar">
+        <button id="zoom-button" class="zoom-button" aria-label="Zoom">
+            <span id="zoom-out" title="Diminuir zoom" aria-label="Diminuir zoom">🔍-</span>
+            <span id="zoom-in" title="Aumentar zoom" aria-label="Aumentar zoom">🔍+</span>
+        </button>
+
+        <button id="page-button" class="page-button" aria-label="Navegação de páginas">
+            <span id="page-prev" title="Página anterior" aria-label="Página anterior">⏮</span>
+            <span id="page-number" aria-live="polite">1 / 4</span>
+            <span id="page-next" title="Próxima página" aria-label="Próxima página">⏭</span>
+        </button>
+
+        <button id="download-pdf" class="pdf-btn" title="Baixar PDF">PDF</button>
+        <button id="download-xml" class="xml-btn" title="Baixar XML">XML</button>
+    </div>
+
+    <div class="documento">
+        <img id="img-pagina" src="historico_paginas/pagina_1.png" alt="Página do Histórico Escolar" />
+    </div>
+</div>
+
+<script>
+    let paginaAtual = 1;
+    const totalPaginas = 4;
+    const imagens = [
+        "historico_paginas/pagina_1.png",
+        "historico_paginas/pagina_2.png",
+        "historico_paginas/pagina_3.png",
+        "historico_paginas/pagina_4.png"
+    ];
+    let zoomLevel = 1;
+
+    const imgPagina = document.getElementById("img-pagina");
+    const pageNumberSpan = document.getElementById("page-number");
+    const btnPrev = document.getElementById("page-prev");
+    const btnNext = document.getElementById("page-next");
+
+    function atualizarPagina() {
+        imgPagina.src = imagens[paginaAtual - 1];
+        imgPagina.alt = `Página ${paginaAtual} do histórico escolar`;
+        pageNumberSpan.textContent = `${paginaAtual} / ${totalPaginas}`;
+        resetZoom();
+    }
+
+    function avancarPagina() {
+        if (paginaAtual < totalPaginas) {
+            paginaAtual++;
+            atualizarPagina();
+        }
+    }
+
+    function voltarPagina() {
+        if (paginaAtual > 1) {
+            paginaAtual--;
+            atualizarPagina();
+        }
+    }
+
+    function zoomIn() {
+        zoomLevel += 0.2;
+        if (zoomLevel > 4) zoomLevel = 4;
+        aplicarZoom();
+    }
+
+    function zoomOut() {
+        zoomLevel -= 0.2;
+        if (zoomLevel < 0.2) zoomLevel = 0.2;
+        aplicarZoom();
+    }
+
+    function aplicarZoom() {
+        imgPagina.style.transform = `scale(${zoomLevel.toFixed(2)})`;
+    }
+
+    function resetZoom() {
+        zoomLevel = 1;
+        aplicarZoom();
+    }
+
+    document.getElementById("zoom-in").addEventListener("click", zoomIn);
+    document.getElementById("zoom-out").addEventListener("click", zoomOut);
+    btnPrev.addEventListener("click", voltarPagina);
+    btnNext.addEventListener("click", avancarPagina);
+
+    // Troca do PDF para o arquivo enviado
+    document.getElementById("download-pdf").addEventListener("click", () => {
+        const link = document.createElement("a");
+        link.href = "Historico Escolar.pdf"; // nome do arquivo enviado
+        link.download = "Historico Escolar.pdf";
+        link.click();
+    });
+
+    document.getElementById("download-xml").addEventListener("click", () => {
+        const xmlContent = `<dados><exemplo>XML</exemplo></dados>`;
+        const blob = new Blob([xmlContent], { type: "text/xml" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "historico.xml";
+        link.click();
+        URL.revokeObjectURL(url);
+    });
+
+    atualizarPagina();
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
